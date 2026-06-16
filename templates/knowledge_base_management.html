@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识库管理系统 - 知识库管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .nav-links a.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .user-id {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+        
+        .btn-logout {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            text-decoration: none;
+        }
+        
+        .btn-logout:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .main-content {
+            max-width: 1600px;
+            margin: 40px auto;
+            padding: 0 20px;
+            min-width: 1500px;
+        }   
+        
+        .page-header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .page-title h2 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .page-title p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .btn-add-kb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+        }
+        
+        .btn-add-kb:hover {
+            transform: translateY(-2px);
+        }
+        
+        .kb-table {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .table-header {
+            background: #f8f9fa;
+            padding: 20px;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .table-header h3 {
+            color: #333;
+            font-size: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        
+        th, td {
+            padding: 15px 20px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+            word-wrap: break-word;
+        }
+        
+        th:nth-child(1), td:nth-child(1) {
+            width: 320px; /* 知识库ID列宽度 */
+            min-width: 320px;
+            max-width: 320px;
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(2), td:nth-child(2) {
+            width: 220px; /* 英文名称列宽度 */
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(3), td:nth-child(3) {
+            width: 220px; /* 中文名称列宽度 */
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(4), td:nth-child(4) {
+            width: 200px; /* 上传时间列宽度 */
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(5), td:nth-child(5) {
+            width: 200px; /* 更新时间列宽度 */
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(6), td:nth-child(6) {
+            width: 150px; /* 上传人列宽度 */
+            white-space: nowrap;
+            overflow: visible;
+        }
+        
+        th:nth-child(7), td:nth-child(7) {
+            width: 120px; /* 操作列宽度 */
+        }
+        
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: nowrap;
+        }
+        
+        .btn-edit, .btn-delete {
+            padding: 6px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s;
+            white-space: nowrap;
+            min-width: 45px;
+        }
+        
+        .btn-edit {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-edit:hover {
+            background: #218838;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .btn-cancel, .btn-save {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-save {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #5a6fd8;
+        }
+        
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+        
+        .flash-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #c3e6cb;
+            margin-bottom: 10px;
+        }
+        
+        .flash-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部导航 -->
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <h1>知识库管理系统</h1>
+            </div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">仪表板</a>
+                <a href="{{ url_for('user_management') }}">用户管理</a>
+                <a href="{{ url_for('knowledge_base_management') }}" class="active">知识库管理</a>
+            </div>
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name">{{ emp_name }}</div>
+                    <div class="user-id">工号：{{ emp_lob_num }}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn-logout">退出登录</a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 主内容区域 -->
+    <div class="main-content">
+        <!-- 消息提示 -->
+        <div class="flash-messages">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        
+        <!-- 页面标题 -->
+        <div class="page-header">
+            <div class="page-title">
+                <h2>知识库管理</h2>
+                <p>管理系统知识库信息，支持增删改查操作</p>
+            </div>
+            <button class="btn-add-kb" onclick="openAddModal()">+ 添加知识库</button>
+        </div>
+        
+        <!-- 知识库列表 -->
+        <div class="kb-table">
+            <div class="table-header">
+                <h3>知识库列表</h3>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>知识库ID</th>
+                        <th>英文名称</th>
+                        <th>中文名称</th>
+                        <th>上传时间</th>
+                        <th>更新时间</th>
+                        <th>上传人</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="kb-tbody">
+                    {% for kb in knowledge_bases %}
+                    <tr>
+                        <td title="{{ kb.bk_id }}" style="font-family: 'Courier New', monospace; font-size: 12px; max-width: 300px; word-break: break-all;">{{ kb.bk_id }}</td>
+                        <td>{{ kb.bk_en_name }}</td>
+                        <td>{{ kb.bk_cn_name }}</td>
+                        <td>{{ kb.upload_time }}</td>
+                        <td>{{ kb.update_time }}</td>
+                        <td>{{ kb.uploaded_by }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn-edit" onclick="openEditModal('{{ kb.bk_id }}', '{{ kb.bk_en_name }}', '{{ kb.bk_cn_name }}')">编辑</button>
+                                <button class="btn-delete" onclick="deleteKnowledgeBase('{{ kb.bk_id }}', '{{ kb.bk_cn_name }}')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- 添加知识库模态框 -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>添加知识库</h3>
+                <span class="close" onclick="closeAddModal()">&times;</span>
+            </div>
+            <form id="addKBForm">
+                <div class="form-group">
+                    <label for="addBkEnName">英文名称</label>
+                    <input type="text" id="addBkEnName" name="bk_en_name" required placeholder="例如：fp_butler_financial">
+                </div>
+                <div class="form-group">
+                    <label for="addBkCnName">中文名称</label>
+                    <input type="text" id="addBkCnName" name="bk_cn_name" required placeholder="例如：资金计划">
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeAddModal()">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- 编辑知识库模态框 -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>编辑知识库</h3>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <form id="editKBForm">
+                <input type="hidden" id="editBkId" name="bk_id">
+                <div class="form-group">
+                    <label for="editBkEnName">英文名称</label>
+                    <input type="text" id="editBkEnName" name="bk_en_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="editBkCnName">中文名称</label>
+                    <input type="text" id="editBkCnName" name="bk_cn_name" required>
+                </div>
+                <div class="form-buttons">
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">取消</button>
+                    <button type="submit" class="btn-save">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // 模态框控制
+        function openAddModal() {
+            document.getElementById('addModal').style.display = 'block';
+            document.getElementById('addKBForm').reset();
+        }
+        
+        function closeAddModal() {
+            document.getElementById('addModal').style.display = 'none';
+        }
+        
+        function openEditModal(bkId, bkEnName, bkCnName) {
+            document.getElementById('editModal').style.display = 'block';
+            document.getElementById('editBkId').value = bkId;
+            document.getElementById('editBkEnName').value = bkEnName;
+            document.getElementById('editBkCnName').value = bkCnName;
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+        
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const addModal = document.getElementById('addModal');
+            const editModal = document.getElementById('editModal');
+            
+            if (event.target === addModal) {
+                closeAddModal();
+            }
+            if (event.target === editModal) {
+                closeEditModal();
+            }
+        }
+        
+        // 添加知识库
+        document.getElementById('addKBForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/knowledge_bases', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('知识库添加成功！');
+                    closeAddModal();
+                    location.reload();
+                } else {
+                    alert('添加失败：' + result.message);
+                }
+            })
+            .catch(error => {
+                alert('添加失败：' + error.message);
+            });
+        });
+        
+        // 编辑知识库
+        document.getElementById('editKBForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            fetch('/api/knowledge_bases', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('知识库更新成功！');
+                    closeEditModal();
+                    location.reload();
+                } else {
+                    alert('更新失败：' + result.message);
+                }
+            })
+            .catch(error => {
+                alert('更新失败：' + error.message);
+            });
+        });
+        
+        // 删除知识库
+        function deleteKnowledgeBase(bkId, bkCnName) {
+            if (confirm(`确定要删除知识库 "${bkCnName}" 吗？此操作不可恢复。`)) {
+                fetch(`/api/knowledge_bases?bk_id=${bkId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        alert('知识库删除成功！');
+                        location.reload();
+                    } else {
+                        alert('删除失败：' + result.message);
+                    }
+                })
+                .catch(error => {
+                    alert('删除失败：' + error.message);
+                });
+            }
+        }
+        
+        // 页面加载时显示动画
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('#kb-tbody tr');
+            rows.forEach((row, index) => {
+                row.style.opacity = '0';
+                row.style.transform = 'translateX(-20px)';
+                
+                setTimeout(() => {
+                    row.style.transition = 'all 0.5s ease';
+                    row.style.opacity = '1';
+                    row.style.transform = 'translateX(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能搜索 - 知识库管理系统</title>
+    <script src="{{ url_for('static', filename='marked.min.js') }}"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* ── 导航 ── */
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 16px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.15); }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; padding: 0 24px; }
+        .logo h1 { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+        .nav-links { display: flex; gap: 4px; align-items: center; }
+        .nav-links a { color: rgba(255,255,255,0.85); text-decoration: none; padding: 7px 14px; border-radius: 6px; font-size: 14px; transition: all 0.2s; }
+        .nav-links a:hover { background: rgba(255,255,255,0.2); color: white; }
+        .nav-links a.active { background: rgba(255,255,255,0.25); color: white; font-weight: 600; }
+        .user-info { display: flex; align-items: center; gap: 12px; }
+        .user-name { font-size: 15px; font-weight: bold; }
+        .user-id { font-size: 12px; opacity: 0.85; }
+        .btn-logout { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.3); padding: 7px 16px; border-radius: 6px; cursor: pointer; text-decoration: none; font-size: 13px; transition: background 0.2s; }
+        .btn-logout:hover { background: rgba(255,255,255,0.28); }
+
+        /* ── 主布局 ── */
+        .layout { max-width: 1400px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: 320px 1fr; gap: 20px; align-items: start; }
+
+        /* ── 左侧搜索面板 ── */
+        .search-panel { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; position: sticky; top: 24px; }
+        .panel-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 18px 20px; }
+        .panel-header h2 { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+        .panel-header p { font-size: 12px; opacity: 0.85; }
+        .panel-body { padding: 20px; }
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 6px; }
+        .field label .required { color: #e53e3e; margin-left: 2px; }
+        .field label .optional { color: #aaa; font-weight: normal; font-size: 12px; margin-left: 4px; }
+        .field select, .field input, .field textarea {
+            width: 100%; padding: 10px 12px; border: 1.5px solid #e2e8f0;
+            border-radius: 8px; font-size: 14px; color: #333;
+            background: #fafbfc; transition: border-color 0.2s, box-shadow 0.2s;
+            font-family: inherit;
+        }
+        .field select:focus, .field input:focus, .field textarea:focus {
+            outline: none; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+            background: white;
+        }
+        .field textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+        .field select option[value=""] { color: #aaa; }
+        .btn-search {
+            width: 100%; padding: 12px; border: none; border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s; margin-top: 4px;
+        }
+        .btn-search:hover { opacity: 0.92; transform: translateY(-1px); }
+        .btn-search:active { transform: translateY(0); }
+        .btn-search:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        .btn-clear { width: 100%; padding: 9px; border: 1.5px solid #e2e8f0; border-radius: 8px; background: white; color: #666; font-size: 14px; cursor: pointer; margin-top: 8px; transition: all 0.2s; }
+        .btn-clear:hover { border-color: #667eea; color: #667eea; }
+
+        /* ── 右侧结果区 ── */
+        .result-area { display: flex; flex-direction: column; gap: 16px; }
+
+        /* 空状态 */
+        .empty-state { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 60px 20px; text-align: center; color: #aaa; }
+        .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+        .empty-state p { font-size: 15px; }
+
+        /* LLM 回答卡 */
+        .llm-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; display: none; }
+        .card-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; }
+        .card-header .icon { font-size: 18px; }
+        .card-header .title { font-size: 15px; font-weight: 600; color: #333; }
+        .card-header .badge { margin-left: auto; font-size: 12px; color: #888; }
+        .llm-body { padding: 20px; min-height: 60px; }
+        .thinking { display: flex; align-items: center; gap: 10px; color: #888; font-size: 14px; padding: 8px 0; }
+        .dot-loader span { display: inline-block; width: 7px; height: 7px; background: #667eea; border-radius: 50%; margin: 0 2px; animation: bounce 1.2s infinite; }
+        .dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+        .dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%,80%,100%{transform:scale(0)} 40%{transform:scale(1)} }
+        .llm-answer { font-size: 14px; line-height: 1.8; color: #333; }
+        .llm-answer p { margin-bottom: 10px; }
+        .llm-answer ul, .llm-answer ol { padding-left: 20px; margin-bottom: 10px; }
+        .llm-answer li { margin-bottom: 4px; }
+        .llm-answer code { background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+        .llm-answer pre { background: #f8f8f8; padding: 12px; border-radius: 8px; overflow-x: auto; margin-bottom: 10px; }
+        .llm-answer pre code { background: none; padding: 0; }
+        .llm-answer h1,.llm-answer h2,.llm-answer h3 { margin: 12px 0 6px; color: #222; }
+        .error-msg { color: #e53e3e; font-size: 14px; padding: 8px 0; }
+
+        /* RAG 分片卡 */
+        .rag-card { background: white; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); overflow: hidden; display: none; }
+        .rag-toggle-header { padding: 14px 20px; border-bottom: 1px solid #f0f0f0; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+        .rag-toggle-header:hover { background: #fafbfc; }
+        .rag-count { background: #667eea; color: white; font-size: 11px; padding: 2px 8px; border-radius: 12px; margin-left: 4px; }
+        .rag-arrow { margin-left: auto; color: #aaa; font-size: 13px; transition: transform 0.25s; }
+        .rag-arrow.open { transform: rotate(180deg); }
+        .rag-body { padding: 16px 20px; display: none; }
+        .chunk-item { border: 1px solid #edf2f7; border-radius: 8px; padding: 14px; margin-bottom: 10px; transition: border-color 0.2s; }
+        .chunk-item:last-child { margin-bottom: 0; }
+        .chunk-item:hover { border-color: #667eea; }
+        .chunk-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .chunk-rank { background: linear-gradient(135deg,#667eea,#764ba2); color: white; padding: 2px 10px; border-radius: 12px; font-size: 12px; }
+        .chunk-sim { color: #38a169; font-size: 12px; font-weight: 600; }
+        .chunk-file { font-size: 12px; color: #666; }
+        .chunk-content { background: #f8fafc; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.65; color: #444; white-space: pre-wrap; word-wrap: break-word; max-height: 180px; overflow-y: auto; }
+        .no-chunks { text-align: center; color: #aaa; padding: 24px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo"><h1>📚 知识库管理系统</h1></div>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}">仪表板</a>
+                <a href="{{ url_for('knowledge_base_management') }}">知识库管理</a>
+                <a href="{{ url_for('document_upload') }}">文档上传</a>
+                <a href="{{ url_for('smart_search') }}" class="active">智能搜索</a>
+                <a href="{{ url_for('dataset_query') }}">数据集查询</a>
+                <a href="{{ url_for('file_management') }}">文件管理</a>
+            </div>
+            <div class="user-info">
+                <div>
+                    <div class="user-name">{{ emp_name }}</div>
+                    <div class="user-id">工号：{{ emp_lob_num }}</div>
+                </div>
+                <a href="{{ url_for('logout') }}" class="btn-logout">退出登录</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <!-- 左侧搜索面板 -->
+        <div class="search-panel">
+            <div class="panel-header">
+                <h2>🔍 智能搜索</h2>
+                <p>RAG 检索增强 + LLM 智能体问答</p>
+            </div>
+            <div class="panel-body">
+                <div class="field">
+                    <label>知识库<span class="required">*</span></label>
+                    <select id="sel-kb" onchange="onKbChange()">
+                        <option value="">请选择知识库...</option>
+                        {% for kb in knowledge_bases %}
+                        <option value="{{ kb.bk_id }}">{{ kb.bk_cn_name }}（{{ kb.bk_en_name }}）</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="field">
+                    <label>文件名<span class="optional">（可选，不选则搜索整个知识库）</span></label>
+                    <select id="sel-file">
+                        <option value="">全部文件</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>召回数量</label>
+                    <select id="sel-topk">
+                        <option value="3">3 条</option>
+                        <option value="5" selected>5 条</option>
+                        <option value="10">10 条</option>
+                        <option value="20">20 条</option>
+                    </select>
+                </div>
+                <div class="field">
+                    <label>搜索问题<span class="required">*</span></label>
+                    <textarea id="inp-search" placeholder="请输入您的问题，按 Ctrl+Enter 搜索..."></textarea>
+                </div>
+                <button class="btn-search" id="btn-search" onclick="doSearch()">🚀 开始搜索</button>
+                <button class="btn-clear" onclick="clearAll()">清空</button>
+            </div>
+        </div>
+
+        <!-- 右侧结果区 -->
+        <div class="result-area" id="result-area">
+            <div class="empty-state" id="empty-state">
+                <div class="icon">🤖</div>
+                <p>选择知识库并输入问题，开始智能搜索</p>
+            </div>
+
+            <!-- LLM 回答 -->
+            <div class="llm-card" id="llm-card">
+                <div class="card-header">
+                    <span class="icon">🤖</span>
+                    <span class="title">智能体回答</span>
+                    <span class="badge" id="llm-badge"></span>
+                </div>
+                <div class="llm-body" id="llm-body">
+                    <div class="thinking" id="llm-thinking">
+                        <div class="dot-loader"><span></span><span></span><span></span></div>
+                        <span>正在思考中，请稍候...</span>
+                    </div>
+                    <div class="llm-answer" id="llm-answer" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- RAG 分片 -->
+            <div class="rag-card" id="rag-card">
+                <div class="rag-toggle-header" onclick="toggleRag()">
+                    <span class="icon">📄</span>
+                    <span class="title" style="font-size:15px;font-weight:600;color:#333;">知识库检索片段</span>
+                    <span class="rag-count" id="rag-count">0</span>
+                    <span class="rag-arrow" id="rag-arrow">▼</span>
+                </div>
+                <div class="rag-body" id="rag-body">
+                    <div id="chunk-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 知识库-文件名映射数据 -->
+    <script>
+        var KB_FILES = {{ filenames_by_kb | tojson }};
+        var llmRawText = '';
+
+        function onKbChange() {
+            var kb = document.getElementById('sel-kb').value;
+            var sel = document.getElementById('sel-file');
+            sel.innerHTML = '<option value="">全部文件</option>';
+            if (kb && KB_FILES[kb]) {
+                KB_FILES[kb].forEach(function(f) {
+                    var opt = document.createElement('option');
+                    opt.value = f;
+                    opt.textContent = f;
+                    sel.appendChild(opt);
+                });
+            }
+        }
+
+        function doSearch() {
+            var kb = document.getElementById('sel-kb').value;
+            var filename = document.getElementById('sel-file').value;
+            var searchText = document.getElementById('inp-search').value.trim();
+            var topK = document.getElementById('sel-topk').value;
+
+            if (!kb) { alert('请选择知识库'); return; }
+            if (!searchText) { alert('请输入搜索问题'); return; }
+
+            // 重置 UI
+            document.getElementById('empty-state').style.display = 'none';
+            var llmCard = document.getElementById('llm-card');
+            var ragCard = document.getElementById('rag-card');
+            var llmThinking = document.getElementById('llm-thinking');
+            var llmAnswer = document.getElementById('llm-answer');
+            var btn = document.getElementById('btn-search');
+            var llmBadge = document.getElementById('llm-badge');
+
+            llmCard.style.display = 'block';
+            ragCard.style.display = 'none';
+            llmThinking.style.display = 'flex';
+            llmAnswer.style.display = 'none';
+            llmAnswer.innerHTML = '';
+            llmRawText = '';
+            llmBadge.textContent = '';
+            btn.disabled = true;
+            btn.textContent = '搜索中...';
+
+            fetch('/api/smart_search_llm', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ kb_id: kb, filename: filename, search_text: searchText, top_k: parseInt(topK) })
+            }).then(function(resp) {
+                var reader = resp.body.getReader();
+                var decoder = new TextDecoder();
+                var buffer = '';
+                function read() {
+                    reader.read().then(function(r) {
+                        if (r.done) { finishSearch(); return; }
+                        buffer += decoder.decode(r.value, { stream: true });
+                        var lines = buffer.split('\n');
+                        buffer = lines.pop();
+                        lines.forEach(function(line) {
+                            if (line.indexOf('data:') === 0) {
+                                var raw = line.slice(5).trim();
+                                if (raw) { try { handleEvent(JSON.parse(raw)); } catch(e) {} }
+                            }
+                        });
+                        read();
+                    }).catch(function() { finishSearch(); });
+                }
+                read();
+            }).catch(function(err) {
+                showError('请求失败: ' + err.message);
+                finishSearch();
+            });
+        }
+
+        function handleEvent(obj) {
+            var llmThinking = document.getElementById('llm-thinking');
+            var llmAnswer = document.getElementById('llm-answer');
+            if (obj.type === 'rag') {
+                renderRag(obj.chunks);
+            } else if (obj.type === 'answer') {
+                if (llmThinking.style.display !== 'none') {
+                    llmThinking.style.display = 'none';
+                    llmAnswer.style.display = 'block';
+                }
+                llmRawText += obj.content;
+                llmAnswer.innerHTML = marked.parse(llmRawText);
+            } else if (obj.type === 'error') {
+                showError(obj.message);
+            } else if (obj.type === 'done') {
+                finishSearch();
+            }
+        }
+
+        function renderRag(chunks) {
+            var ragCard = document.getElementById('rag-card');
+            var chunkList = document.getElementById('chunk-list');
+            var ragCount = document.getElementById('rag-count');
+            ragCard.style.display = 'block';
+            ragCount.textContent = chunks.length;
+            if (chunks.length === 0) {
+                chunkList.innerHTML = '<div class="no-chunks">未检索到相关片段</div>';
+                return;
+            }
+            var html = '';
+            for (var i = 0; i < chunks.length; i++) {
+                var c = chunks[i];
+                html += '<div class="chunk-item">';
+                html += '<div class="chunk-meta">';
+                html += '<span class="chunk-rank">第 ' + c.rank + ' 条</span>';
+                html += '<span class="chunk-sim">相似度 ' + (c.similarity * 100).toFixed(1) + '%</span>';
+                html += '<span class="chunk-file">📄 ' + esc(c.filename) + (c.opportunity_number ? ' | ' + esc(c.opportunity_number) : '') + '</span>';
+                html += '</div>';
+                html += '<div class="chunk-content">' + esc(c.chunk_content) + '</div>';
+                html += '</div>';
+            }
+            chunkList.innerHTML = html;
+        }
+
+        function finishSearch() {
+            var btn = document.getElementById('btn-search');
+            var llmThinking = document.getElementById('llm-thinking');
+            var llmAnswer = document.getElementById('llm-answer');
+            btn.disabled = false;
+            btn.textContent = '🚀 开始搜索';
+            if (llmThinking.style.display !== 'none') {
+                llmThinking.style.display = 'none';
+                llmAnswer.style.display = 'block';
+                if (!llmRawText) llmAnswer.innerHTML = '<span style="color:#aaa;">（未获取到回答）</span>';
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('llm-thinking').style.display = 'none';
+            document.getElementById('llm-body').innerHTML = '<div class="error-msg">❌ ' + esc(msg) + '</div>';
+            document.getElementById('btn-search').disabled = false;
+            document.getElementById('btn-search').textContent = '🚀 开始搜索';
+        }
+
+        function toggleRag() {
+            var body = document.getElementById('rag-body');
+            var arrow = document.getElementById('rag-arrow');
+            var open = body.style.display === 'none' || body.style.display === '';
+            body.style.display = open ? 'block' : 'none';
+            if (open) { arrow.classList.add('open'); } else { arrow.classList.remove('open'); }
+        }
+
+        function clearAll() {
+            document.getElementById('inp-search').value = '';
+            document.getElementById('sel-kb').value = '';
+            document.getElementById('sel-file').innerHTML = '<option value="">全部文件</option>';
+            document.getElementById('empty-state').style.display = 'block';
+            document.getElementById('llm-card').style.display = 'none';
+            document.getElementById('rag-card').style.display = 'none';
+            document.getElementById('btn-search').disabled = false;
+            document.getElementById('btn-search').textContent = '🚀 开始搜索';
+            llmRawText = '';
+        }
+
+        function esc(str) {
+            return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // Ctrl+Enter 触发搜索
+        document.getElementById('inp-search').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && e.ctrlKey) doSearch();
+        });
+    </script>
+</body>
+</html>
